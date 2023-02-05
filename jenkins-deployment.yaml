@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-deployment
-  namespace: jenkins-test
+  name: jenkins
+  namespace: jenkins
 spec:
   replicas: 1
   selector:
@@ -14,9 +14,9 @@ spec:
         name: jenkins
     spec:
       volumes:
-        - name: jenkins-nfs-pvc-new
+        - name: jenkins-nfs-pvc
           persistentVolumeClaim:
-            claimName: jenkins-fss-pvc
+            claimName: jenkins-azurefile-pvc
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:debug
@@ -24,7 +24,7 @@ spec:
             - /busybox/cat
           resources: {}
           volumeMounts:
-            - name: jenkins-nfs-pvc-new
+            - name: jenkins-nfs-pvc
               mountPath: /var/jenkins_home
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -46,13 +46,13 @@ spec:
               value: "-Xmx9800m"
           resources:
             limits:
-              cpu: '3'
-              memory: 10Gi
+              cpu: '2'
+              memory: 4Gi
             requests:
               cpu: 500m
               memory: 1500Mi
           volumeMounts:
-            - name: jenkins-nfs-pvc-new
+            - name: jenkins-nfs-pvc
               mountPath: /var/jenkins_home
           livenessProbe:
             httpGet:
@@ -83,10 +83,3 @@ spec:
       securityContext:
         fsGroup: 1000
       schedulerName: default-scheduler
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
