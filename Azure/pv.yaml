@@ -1,0 +1,22 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: jenkins-azurefile-pv
+spec:
+  containers:
+  - name: jenkins-azurefile-pv
+    image: mcr.microsoft.com/oss/nginx/nginx:1.15.5-alpine
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    volumeMounts:
+    - mountPath: "/mnt/jenkins_home"
+      name: volume
+  volumes:
+    - name: volume
+      persistentVolumeClaim:
+        claimName: jenkins-azurefile-pvc
