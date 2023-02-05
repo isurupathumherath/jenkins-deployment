@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: jenkins-fss
+provisioner: oracle.com/jenkins-fss
+parameters:
+  # Insert mount target from the FSS here
+  mntTargetId: ocid1.mounttarget.oc1.eu_frankfurt_1.aaaaacvippyz22wumzzgcllqojxwiotfouwwm4tbnzvwm5lsoqwtcllbmqwtgaaa
+

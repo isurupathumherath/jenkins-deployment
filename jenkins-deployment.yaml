@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-deployment
+  namespace: jenkins-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: jenkins
+  template:
+    metadata:
+      labels:
+        name: jenkins
+    spec:
+      volumes:
+        - name: jenkins-nfs-pvc-new
+          persistentVolumeClaim:
+            claimName: jenkins-fss-pvc
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:debug
+          command:
+            - /busybox/cat
+          resources: {}
+          volumeMounts:
+            - name: jenkins-nfs-pvc-new
+              mountPath: /var/jenkins_home
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          tty: true
+        - name: jenkins
+          image: jenkins/jenkins:2.389-jdk11
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: executor
+              containerPort: 50000
+              protocol: TCP
+          env:
+            - name: "JENKINS_OPTS"
+              value: "--prefix=/jenkins"
+            - name: "JAVA_OPTS"
+              value: "-Xmx9800m"
+          resources:
+            limits:
+              cpu: '3'
+              memory: 10Gi
+            requests:
+              cpu: 500m
+              memory: 1500Mi
+          volumeMounts:
+            - name: jenkins-nfs-pvc-new
+              mountPath: /var/jenkins_home
+          livenessProbe:
+            httpGet:
+              path: /jenkins/login
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /jenkins/login
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 1000
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
